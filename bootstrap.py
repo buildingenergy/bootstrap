@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+from os import path
 import tempfile
 from subprocess import call, check_call, check_output, CalledProcessError, Popen, PIPE
 
@@ -273,6 +274,26 @@ def main(args=sys.argv):
     # sysprint("Setting up /etc/hosts for be.com")
     # print "done."
 
+    # Update the bash profile.
+    sysprint("Adding homebrew paths and virtualenv to your .bash_profile... ")
+    profile_content = """
+#### Start BE config ####
+alias kill_pyc="find . -name '*.pyc' -delete"
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
+source /usr/local/share/python/virtualenvwrapper.sh
+source `brew --prefix git`/etc/bash_completion.d/git-completion.bash
+#### End BE config ####
+"""
+    try:
+        home = path.expanduser("~")
+        with open(path.join(home, ".bash_profile"), "a+") as f:
+            if not profile_content in f.read():
+                f.write(profile_content)
+        print "done."
+    except:
+        print "Unable to automatically add to your .bash_profle. Please add the following to your shell .rc file of choice."
+        print "\n%s\n" % profile_content
+
     # Do you want to install sublime packages?
     if confirm("Would you like to have some useful sublime plugins installed (Linter, codeIntel, etc?) (y/n)"):
         sub_dir = "~/Library/Application\ Support/Sublime\ Text\ 2/Packages"
@@ -291,7 +312,10 @@ def main(args=sys.argv):
 
 You can now use flint to work on our codebase.
 
-To get started, type:
+To get started, first, open a new terminal.
+
+Then, type:
+
 
 flint
 
