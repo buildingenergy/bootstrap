@@ -29,7 +29,7 @@ def confirm(prompt, retries=4, complaint='Please enter y or n!'):
 
 def program_exists(program):
     try:
-        ret_code = call(program, shell=True, stdout=PIPE, stderr=PIPE)
+        ret_code = call("export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
         return ret_code == 0
     except:
         return False
