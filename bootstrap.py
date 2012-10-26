@@ -81,7 +81,7 @@ def verify_or_gem_install(name, cmd, brew_package, required=True):
 
 
 def verify_or_pip_install(name, cmd, brew_package, required=True):
-    return verify_or_install(name, cmd, 'pip install %s' % brew_package)
+    return verify_or_install(name, cmd, '/usr/local/bin/pip install %s' % brew_package)
 
 
 def pip_install(package, package_name=None, required=True):
@@ -90,7 +90,7 @@ def pip_install(package, package_name=None, required=True):
     sysprint("Installing %s... " % package_name)
 
     try:
-        check_call('pip install %s' % package, shell=True, stdout=NULL_FH, stderr=NULL_FH)
+        check_call('/usr/local/bin/pip install %s' % package, shell=True, stdout=NULL_FH, stderr=NULL_FH)
     except:
         sys.exit("Error installing %s.\n\nPlease 'pip install %s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
             (package_name, package)
@@ -245,7 +245,7 @@ def main(args=sys.argv):
     verify_or_brew_install("Python 2.7", "python2.7 -V", "python")
 
     #### Install pip ####
-    verify_or_install("pip", "pip", "easy_install-2.7 pip")
+    verify_or_install("pip", "/usr/local/bin/pip", "easy_install-2.7 pip")
 
     # install virtualenv / virtualenvwrapper
     pip_install("virtualenv")
