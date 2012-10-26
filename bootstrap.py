@@ -263,9 +263,6 @@ def main(args=sys.argv):
     verify_or_brew_install("Git-flow plugin", "git-flow version", "git-flow")
     verify_or_brew_install("Mysql", "mysql -V", "mysql")
     verify_or_brew_install("Memcached", "memcached -h", "memcached")
-    verify_or_brew_install("redis", "redis-cli --version", "redis")
-    verify_or_brew_install("rabbitmq", "rabbitmqctl status", "rabbitmq")
-    verify_or_brew_install("postgresql", "pg_ctl -V", "postgresql")
     verify_or_brew_install("fortran", "gfortran -v", "gfortran")
     verify_or_brew_install("chromedriver", "which -s chromedriver", "chromedriver")
 
