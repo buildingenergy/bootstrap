@@ -92,7 +92,7 @@ def pip_install(package, package_name=None, required=True):
     try:
         check_call('/usr/local/bin/pip install %s' % package, shell=True, stdout=NULL_FH, stderr=NULL_FH)
     except:
-        sys.exit("Error installing %s.\n\nPlease 'pip install %s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
+        sys.exit("Error installing %s.\n\nPlease '/usr/local/bin/pip install %s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
             (package_name, package)
         )
     print "done."
@@ -242,10 +242,10 @@ def main(args=sys.argv):
 ####                   Core Packages                      ####
 ##############################################################"""
     #### Install python2.7 ####
-    verify_or_brew_install("Python 2.7", "python2.7 -V", "python")
+    verify_or_brew_install("Python 2.7", "/usr/local/bin/python2.7 -V", "python")
 
     #### Install pip ####
-    verify_or_install("pip", "/usr/local/bin/pip", "easy_install-2.7 pip")
+    verify_or_install("pip", "pip", "easy_install-2.7 pip")
 
     # install virtualenv / virtualenvwrapper
     pip_install("virtualenv")
