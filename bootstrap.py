@@ -28,8 +28,8 @@ def confirm(prompt, retries=4, complaint='Please enter y or n!'):
 
 def program_exists(program):
     try:
-        call(program, shell=True, stdout=NULL_FH, stderr=NULL_FH)
-        return True
+        ret_code = call(program, shell=True, stdout=PIPE, stderr=PIPE)
+        return ret_code == 0
     except:
         return False
 
@@ -104,30 +104,32 @@ def main(args=sys.argv):
     TEMP_DIR = tempfile.mkdtemp()
 
     print """
-##############################################################
-##############################################################
-####        ####  #######         ####  #####  ####       ####
-####  ##########  ########### ########   ####  ####### #######
-####  ##########  ########### ########  # ###  ####### #######
-####      ######  ########### ########  ## ##  ####### #######
-####  ##########  ########### ########  ### #  ####### #######
-####  ##########  ########### ########  ####   ####### #######
-####  ##########      ####        ####  ####   ####### #######
-##############################################################
-##############################################################
-####                                                      ####
-####                   Bootstrapping!                     ####
-####                                                      ####
-##############################################################
-##############################################################
+##############################################################################
+##############################################################################
+#############        ####  #######         ####  #####  ####       ###########
+#############  ##########  ########### ########   ####  ####### ##############
+#############  ##########  ########### ########  # ###  ####### ##############
+#############      ######  ########### ########  ## ##  ####### ##############
+#############  ##########  ########### ########  ### #  ####### ##############
+#############  ##########  ########### ########  ####   ####### ##############
+#############  ##########      ####        ####  ####   ####### ##############
+##############################################################################
+##############################################################################
+############                                                      ############
+############                   Bootstrapping!                     ############
+############                                                      ############
+##############################################################################
+##############################################################################
+##############################################################################
+
 """
 
 
     ### Sanity check dev tools, etc installed. ###
     print """
-##############################################################
-####                  System Dev Tools                    ####
-##############################################################"""
+##############################################################################
+############                  System Dev Tools                    ############
+##############################################################################"""
 
     IS_A_MAC = False
     MAC_OS_VERSION = check_output("sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'", shell=True).replace("\n", "")
@@ -142,7 +144,7 @@ def main(args=sys.argv):
 
         # See if we have the developer tools installed.
         sysprint("Checking for the developer tools or xCode... ")
-        while not program_exists("gcc") or not program_exists("make"):
+        while not program_exists("gcc -v") or not program_exists("make -v"):
             print "not found."
 
             # Download the dev tools, open the instaaller.
@@ -161,11 +163,11 @@ def main(args=sys.argv):
     if IS_A_MAC:
         # if we have brew, just run update
         print """
-##############################################################
-####                      Homebrew                        ####
-##############################################################"""
+##############################################################################
+############                      Homebrew                        ############
+##############################################################################"""
 
-        if not verify_existance("homebrew", "brew"):
+        if not verify_existance("homebrew", "brew -v"):
             sysprint("Installing homebrew...")
             call("ruby -e '$(curl -fsSkL raw.github.com/mxcl/homebrew/go)'", shell=True, stdout=NULL_FH, stderr=NULL_FH)
             print "done."
@@ -180,9 +182,9 @@ def main(args=sys.argv):
         print "Homebrew looks good!"
 
         print """
-##############################################################
-####                      Virtualbox                      ####
-##############################################################"""
+##############################################################################
+############                      Virtualbox                      ############
+##############################################################################"""
 
         while not verify_existance("Virtualbox", "ls /Applications/Virtualbox.app"):
 
@@ -199,17 +201,17 @@ def main(args=sys.argv):
 
     # No longer mac-only.
     print """
-##############################################################
-####                       Vagrant                        ####
-##############################################################"""
+##############################################################################
+############                       Vagrant                        ############
+##############################################################################"""
 
     verify_or_gem_install("Vagrant", "vagrant", "vagrant")
 
  # if we have brew, just run update
     print """
-##############################################################
-####                   Github Auth                        ####
-##############################################################"""
+##############################################################################
+############                     Github Auth                      ############
+##############################################################################"""
 
     # Verify that you have access to github.
     sysprint("Verifying your SSH key on github... ")
@@ -238,14 +240,14 @@ def main(args=sys.argv):
 
  # if we have brew, just run update
     print """
-##############################################################
-####                   Core Packages                      ####
-##############################################################"""
+##############################################################################
+############                   Core Packages                      ############
+##############################################################################"""
     #### Install python2.7 ####
-    verify_or_brew_install("Python 2.7", "/usr/local/bin/python2.7 -V", "python")
+    verify_or_brew_install("Python 2.7", "/usr/local/bin/python2.7 --version", "python")
 
     #### Install pip ####
-    verify_or_install("pip", "pip", "easy_install-2.7 pip")
+    verify_or_install("pip", "/usr/local/bin/pip --version", "/usr/local/bin/easy_install-2.7 pip")
 
     # install virtualenv / virtualenvwrapper
     pip_install("virtualenv")
@@ -268,7 +270,7 @@ def main(args=sys.argv):
     verify_or_brew_install("chromedriver", "which -s chromedriver", "chromedriver")
 
     #### Install flint ####
-    verify_or_pip_install("Flint", "flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint",)
+    verify_or_pip_install("Flint", "flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint --upgrade")
 
     # set up /etc/hosts
     # sysprint("Setting up /etc/hosts for be.com")
@@ -276,19 +278,19 @@ def main(args=sys.argv):
 
     # Do you want to install sublime packages?
     if confirm("Would you like to have some useful sublime plugins installed (Linter, codeIntel, etc?) (y/n)"):
-        sub_dir = "~/Library/Application Support/Sublime Text 2/Packages"
-        verify_or_install("Sublime CodeIntel", "ls %s/SublimeCodeIntel", "git clone git://github.com/Kronuz/SublimeCodeIntel.git %s/SublimeCodeIntel" % sub_dir)
-        verify_or_install("Sublime Linter", "ls %s/SublimeLinter", "git clone git://github.com/SublimeLinter/SublimeLinter.git %s/SublimeLinter" % sub_dir)
-        verify_or_install("Cucumber Syntax", "ls %s/Cucumber", "git clone git://github.com/npverni/cucumber-sublime2-bundle.git %s/Cucumber" % sub_dir)
-        verify_or_install("Django Syntax", "ls %s/Djaneiro", "git clone git://github.com/squ1b3r/Djaneiro.git %s/Djaneiro" % sub_dir)
-        verify_or_install("HTML5 Syntax", "ls %s/HTML5", "git clone git://github.com/mrmartineau/HTML5.git %s/HTML5" % sub_dir)
-        verify_or_install("Package Control", "ls %s/Package\ Control", "curl http://sublime.wbond.net/Package+Control.sublime-package -so %s/Package Control.sublime-package " % sub_dir)
+        sub_dir = "~/Library/Application\ Support/Sublime\ Text\ 2/Packages"
+        verify_or_install("Sublime CodeIntel", "ls %s/SublimeCodeIntel/*" % sub_dir, "git clone git://github.com/Kronuz/SublimeCodeIntel.git %s/SublimeCodeIntel" % sub_dir)
+        verify_or_install("Sublime Linter", "ls %s/SublimeLinter/*" % sub_dir, "git clone git://github.com/SublimeLinter/SublimeLinter.git %s/SublimeLinter" % sub_dir)
+        verify_or_install("Cucumber Syntax", "ls %s/Cucumber/*" % sub_dir, "git clone git://github.com/npverni/cucumber-sublime2-bundle.git %s/Cucumber" % sub_dir)
+        verify_or_install("Django Syntax", "ls %s/Djaneiro/*" % sub_dir, "git clone git://github.com/squ1b3r/Djaneiro.git %s/Djaneiro" % sub_dir)
+        verify_or_install("HTML5 Syntax", "ls %s/HTML5/*" % sub_dir, "git clone git://github.com/mrmartineau/HTML5.git %s/HTML5" % sub_dir)
+        verify_or_install("Package Control", "ls %s/Package\ Control/*" % sub_dir, "curl http://sublime.wbond.net/Package+Control.sublime-package -so %s/Package Control.sublime-package " % sub_dir)
 
     print """
 
-##############################################################
-####                Bootstrap Complete!                   ####
-##############################################################
+##############################################################################
+############                Bootstrap Complete!                   ############
+##############################################################################
 
 You can now use flint to work on our codebase.
 
