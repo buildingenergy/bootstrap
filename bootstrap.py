@@ -260,7 +260,7 @@ def main(args=sys.argv):
         call("mkdir ~/.virtualenvs", shell=True, stdout=NULL_FH, stderr=NULL_FH)
         print "done."
 
-    verify_or_brew_install("Git", "git --version", "git")
+    verify_or_brew_install("Git", "/usr/local/bin/git --version", "git")
     verify_or_brew_install("Git-flow plugin", "git-flow version", "git-flow")
     verify_or_brew_install("Mysql", "mysql -V", "mysql")
     verify_or_brew_install("Memcached", "memcached -h", "memcached")
@@ -276,21 +276,33 @@ def main(args=sys.argv):
 
     # Update the bash profile.
     sysprint("Adding homebrew paths and virtualenv to your .bash_profile... ")
-    profile_content = """
-#### Start BE config ####
-alias kill_pyc="find . -name '*.pyc' -delete"
+    profile_header = "\n#### Start BE config ####\n"
+    profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 source /usr/local/share/python/virtualenvwrapper.sh
-source `brew --prefix git`/etc/bash_completion.d/git-completion.bash
-#### End BE config ####
+source /usr/local/etc/bash_completion.d/git-flow-completion.bash
 """
+    profile_footer = "#### End BE config ####\n"
     try:
         home = path.expanduser("~")
-        with open(path.join(home, ".bash_profile"), "a+") as f:
-            if not profile_content in f.read():
-                f.write(profile_content)
+        with open(path.join(home, ".bash_profile"), "r+") as f:
+            contents = "%s" % f.read()
+            if profile_header in contents and profile_footer in contents:
+                new_contents = contents[:contents.find(profile_header) + len(profile_header)]
+                new_contents += profile_content
+                new_contents += contents[contents.find(profile_footer):]
+            else:
+                    new_contents = contents
+                    new_contents += profile_header
+                    new_contents += profile_content
+                    new_contents += profile_footer
+            f.seek(0)
+            f.write(new_contents)
         print "done."
     except:
+        from traceback import print_exc
+        print_exc()
+        print "failed."
         print "Unable to automatically add to your .bash_profle. Please add the following to your shell .rc file of choice."
         print "\n%s\n" % profile_content
 
