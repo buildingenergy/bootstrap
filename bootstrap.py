@@ -63,7 +63,7 @@ def string_in_command_output(cmd, s):
 
 def verify_or_install(name, cmd, install_cmd, required=True):
     if not verify_existance(name, cmd):
-        sysprint("Installing %s... " % name)
+        sysprint("  Installing %s... " % name)
         call(install_cmd, shell=True, stdout=NULL_FH, stderr=NULL_FH)
         if not program_exists(cmd):
             sys.exit("Error installing %s.\n\nPlease run '%s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
@@ -125,7 +125,6 @@ def main(args=sys.argv):
 
 """
 
-
     ### Sanity check dev tools, etc installed. ###
     print """
 ##############################################################################
@@ -140,7 +139,7 @@ def main(args=sys.argv):
         print "Looks like you're not using a Mac.  Flint doesn't support bootstrapping non-macs quite yet, but we'll give it a shot."
     else:
         IS_A_MAC = True
-        BASE_MAC_OS_VERSION = MAC_OS_VERSION[:MAC_OS_VERSION.rfind(".")]
+        # BASE_MAC_OS_VERSION = MAC_OS_VERSION[:MAC_OS_VERSION.rfind(".")]
         print "Detected Mac OS %s." % MAC_OS_VERSION
 
         # See if we have the developer tools installed.
@@ -262,6 +261,7 @@ def main(args=sys.argv):
 
     verify_or_brew_install("Git", "/usr/local/bin/git --version", "git")
     verify_or_brew_install("Git-flow plugin", "git-flow version", "git-flow")
+    verify_or_brew_install("Git autocomplete", "ls `brew --prefix`/etc/bash_completion", "bash-completion")
     verify_or_brew_install("Mysql", "mysql -V", "mysql")
     verify_or_brew_install("Memcached", "memcached -h", "memcached")
     verify_or_brew_install("fortran", "gfortran -v", "gfortran")
@@ -280,6 +280,9 @@ def main(args=sys.argv):
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 source /usr/local/share/python/virtualenvwrapper.sh
+if [ -f `brew --prefix`/etc/bash_completion ]; then
+    . `brew --prefix`/etc/bash_completion
+fi
 source /usr/local/etc/bash_completion.d/git-flow-completion.bash
 """
     profile_footer = "#### End BE config ####\n"
