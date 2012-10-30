@@ -23,7 +23,7 @@ def confirm(prompt, retries=4, complaint='Please enter y or n!'):
             return False
         retries = retries - 1
         if retries < 0:
-            raise IOError('refusenik user')
+            raise IOError('Hm. Maybe your keyboard is broken?')
         print complaint
 
 
@@ -97,6 +97,23 @@ def pip_install(package, package_name=None, required=True):
             (package_name, package)
         )
     print "done."
+
+
+def ensure_file_contains_wrapped_fragment(filename, header, content, footer):
+    with open(filename, "r+") as f:
+        contents = "%s" % f.read()
+        if header in contents and footer in contents:
+            new_contents = contents[:contents.find(header) + len(header)]
+            new_contents += content
+            new_contents += contents[contents.find(footer):]
+        else:
+                new_contents = contents
+                new_contents += header
+                new_contents += content
+                new_contents += footer
+        f.seek(0)
+        f.write(new_contents)
+        f.close()
 
 
 def main(args=sys.argv):
@@ -306,10 +323,6 @@ def main(args=sys.argv):
     verify_or_brew_install("Git", "/usr/local/bin/git --version", "git")
     verify_or_brew_install("Git-flow plugin", "git-flow version", "git-flow")
     verify_or_brew_install("Git autocomplete", "ls `brew --prefix`/etc/bash_completion", "bash-completion")
-    verify_or_brew_install("Mysql", "mysql -V", "mysql")
-    verify_or_brew_install("Memcached", "memcached -h", "memcached")
-    verify_or_brew_install("fortran", "gfortran -v", "gfortran")
-    verify_or_brew_install("chromedriver", "which -s chromedriver", "chromedriver")
 
     #### Install flint ####
     verify_or_pip_install("Flint", "flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint --upgrade")
@@ -324,6 +337,7 @@ def main(args=sys.argv):
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 source /usr/local/share/python/virtualenvwrapper.sh
+source /usr/local/share/python/flint_wrapper.sh
 if [ -f `brew --prefix`/etc/bash_completion ]; then
     . `brew --prefix`/etc/bash_completion
 fi
@@ -331,20 +345,12 @@ source /usr/local/etc/bash_completion.d/git-flow-completion.bash
 """
     profile_footer = "#### End BE config ####\n"
     try:
-        home = path.expanduser("~")
-        with open(path.join(home, ".bash_profile"), "r+") as f:
-            contents = "%s" % f.read()
-            if profile_header in contents and profile_footer in contents:
-                new_contents = contents[:contents.find(profile_header) + len(profile_header)]
-                new_contents += profile_content
-                new_contents += contents[contents.find(profile_footer):]
-            else:
-                    new_contents = contents
-                    new_contents += profile_header
-                    new_contents += profile_content
-                    new_contents += profile_footer
-            f.seek(0)
-            f.write(new_contents)
+        ensure_file_contains_wrapped_fragment(
+            path.join(path.expanduser("~"), ".bash_profile"),
+            profile_header,
+            profile_content,
+            profile_footer
+        )
         print "done."
     except:
         from traceback import print_exc
