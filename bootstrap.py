@@ -357,13 +357,9 @@ source /usr/local/etc/bash_completion.d/git-flow-completion.bash
 ##############################################################################
 
 You can now use flint to work on our codebase.
+To get started, just type:
 
-To get started, first, open a new terminal.
-
-Then, type:
-
-
-flint
+flint help
 
 Have fun!
 """
