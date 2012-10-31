@@ -77,12 +77,12 @@ def verify_or_brew_install(name, cmd, brew_package, required=True):
     return verify_or_install(name, cmd, 'brew install %s' % brew_package)
 
 
-def verify_or_gem_install(name, cmd, brew_package, required=True):
-    return verify_or_install(name, cmd, 'gem install %s' % brew_package)
+def verify_or_gem_install(name, cmd, gem_package, required=True):
+    return verify_or_install(name, cmd, 'gem install %s' % gem_package)
 
 
-def verify_or_pip_install(name, cmd, brew_package, required=True):
-    return verify_or_install(name, cmd, '/usr/local/bin/pip install %s' % brew_package)
+def verify_or_pip_install(name, cmd, pip_package, required=True):
+    return verify_or_install(name, cmd, '/usr/local/bin/pip install %s' % pip_package)
 
 
 def pip_install(package, package_name=None, required=True):
@@ -303,7 +303,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     verify_or_brew_install("Git autocomplete", "ls `brew --prefix`/etc/bash_completion", "bash-completion")
 
     #### Install flint ####
-    verify_or_pip_install("Flint", "flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint --upgrade")
+    verify_or_pip_install("Flint", "/usr/local/share/python/use_flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint -q --upgrade")
 
     # set up /etc/hosts
     # sysprint("Setting up /etc/hosts for be.com")
