@@ -315,6 +315,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 source /usr/local/share/python/virtualenvwrapper.sh
 source /usr/local/share/python/flint_wrapper.sh
+source /usr/local/share/python/flint_autocompletion.sh
 if [ -f `brew --prefix`/etc/bash_completion ]; then
     . `brew --prefix`/etc/bash_completion
 fi
