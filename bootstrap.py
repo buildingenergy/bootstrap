@@ -29,8 +29,10 @@ def confirm(prompt, retries=4, complaint='Please enter y or n!'):
 
 def program_exists(program):
     try:
-        ret_code = call("export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
-        return ret_code == 0
+        p = Popen("source ~/.bash_profile;export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
+        p.communicate()
+        return p.returncode == 0
+
     except:
         return False
 
@@ -64,7 +66,7 @@ def string_in_command_output(cmd, s):
 def verify_or_install(name, cmd, install_cmd, required=True):
     if not verify_existance(name, cmd):
         sysprint("  Installing %s... " % name)
-        call(install_cmd, shell=True, stdout=NULL_FH, stderr=NULL_FH)
+        program_exists(install_cmd)
         if not program_exists(cmd):
             sys.exit("Error installing %s.\n\nPlease run '%s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
                     (name, install_cmd)
@@ -91,7 +93,7 @@ def pip_install(package, package_name=None, required=True):
     sysprint("Installing %s... " % package_name)
 
     try:
-        check_call('/usr/local/bin/pip install %s' % package, shell=True, stdout=NULL_FH, stderr=NULL_FH)
+        program_exists('/usr/local/bin/pip install %s' % package)
     except:
         sys.exit("Error installing %s.\n\nPlease '/usr/local/bin/pip install %s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
             (package_name, package)
