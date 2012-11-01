@@ -316,7 +316,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     profile_header = "\n#### Start BE config ####\n"
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
-source /usr/local/share/python/virtualenvwrapper.sh
+if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
+    source /usr/local/share/python/virtualenvwrapper.sh
+fi
 source /usr/local/etc/flint/flint_wrapper.sh
 source /usr/local/etc/flint/flint_autocompletion.sh
 if [ -f `brew --prefix`/etc/bash_completion ]; then
