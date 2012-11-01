@@ -209,7 +209,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
         if not verify_existance("homebrew", "brew -v"):
             sysprint("Installing homebrew...")
-            call("ruby -e '$(curl -fsSkL raw.github.com/mxcl/homebrew/go)'", shell=True, stdout=NULL_FH, stderr=NULL_FH)
+            call('ruby -e "$(curl -fsSkL raw.github.com/mxcl/homebrew/go)"', shell=True, stdout=NULL_FH, stderr=NULL_FH)
             print "done."
 
         # Update homebrew
