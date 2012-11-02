@@ -323,6 +323,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     profile_header = "\n#### Start BE config ####\n"
     bash_content = ". ~/.flintrc\n"
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
+export BE_BOOTSTRAP_VERSION=1.1
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
     source /usr/local/share/python/virtualenvwrapper.sh
