@@ -29,7 +29,7 @@ def confirm(prompt, retries=4, complaint='Please enter y or n!'):
 
 def program_exists(program):
     try:
-        p = Popen("source ~/.bash_profile;export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
+        p = Popen("if [ -f ~/.flintrc ]; then . ~/.flintrc; fi; export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
         p.communicate()
         return p.returncode == 0
 
@@ -102,18 +102,25 @@ def pip_install(package, package_name=None, required=True):
 
 
 def ensure_file_contains_wrapped_fragment(filename, header, content, footer):
-    with open(filename, "r+") as f:
+    if path.isfile(filename):
+        mode = "r+"
+    else:
+        mode = "w+"
+    with open(filename, mode) as f:
         contents = "%s" % f.read()
         if header in contents and footer in contents:
-            new_contents = contents[:contents.find(header) + len(header)]
+            old_header = "%s" % contents[:contents.find(header) + len(header)]
+            old_footer = "%s" % contents[contents.find(footer):]
+            new_contents = old_header
             new_contents += content
-            new_contents += contents[contents.find(footer):]
+            new_contents += old_footer
         else:
                 new_contents = contents
                 new_contents += header
                 new_contents += content
                 new_contents += footer
         f.seek(0)
+        f.truncate(0)
         f.write(new_contents)
         f.close()
 
@@ -314,6 +321,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     # Update the bash profile.
     sysprint("Adding homebrew paths and virtualenv to your .bash_profile... ")
     profile_header = "\n#### Start BE config ####\n"
+    bash_content = ". ~/.flintrc\n"
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
 if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
@@ -329,9 +337,22 @@ source /usr/local/etc/bash_completion.d/git-flow-completion.bash
     profile_footer = "#### End BE config ####\n"
     try:
         ensure_file_contains_wrapped_fragment(
-            path.join(path.expanduser("~"), ".bash_profile"),
+            path.join(path.expanduser("~"), ".flintrc"),
             profile_header,
             profile_content,
+            profile_footer
+        )
+    except:
+        import traceback
+        traceback.print_exc()
+        print "failed."
+        print "Unable to create the ~/.flintrc file. Please create a .flintrc file in your home directory and run bootstrap again."
+        print "\n%s\n" % profile_content
+    try:
+        ensure_file_contains_wrapped_fragment(
+            path.join(path.expanduser("~"), ".bash_profile"),
+            profile_header,
+            bash_content,
             profile_footer
         )
         print "done."
