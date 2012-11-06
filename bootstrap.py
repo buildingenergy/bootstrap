@@ -2,7 +2,7 @@
 import sys
 from os import path
 import tempfile
-from subprocess import call, check_call, check_output, CalledProcessError, Popen, PIPE
+from subprocess import call, check_output, CalledProcessError, Popen, PIPE
 
 OSX_COMMAND_LINE_TOOLS_URLS = {
     "10.8": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mountain_lion_for_xcode__october_2012/xcode451cltools_10_86938200a.dmg",
@@ -323,8 +323,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     profile_header = "\n#### Start BE config ####\n"
     bash_content = ". ~/.flintrc\n"
     profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
-export BE_BOOTSTRAP_VERSION=1.1
-export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH
+export BE_BOOTSTRAP_VERSION=1.2
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:/usr/local/share/npm/bin/:$PATH
 if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
     source /usr/local/share/python/virtualenvwrapper.sh
 fi
