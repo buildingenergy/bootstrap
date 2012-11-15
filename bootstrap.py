@@ -372,6 +372,7 @@ source /usr/local/etc/bash_completion.d/git-flow-completion.bash
         verify_or_install("Cucumber Syntax", "ls %s/Cucumber/*" % sub_dir, "git clone git://github.com/npverni/cucumber-sublime2-bundle.git %s/Cucumber" % sub_dir)
         verify_or_install("Django Syntax", "ls %s/Djaneiro/*" % sub_dir, "git clone git://github.com/squ1b3r/Djaneiro.git %s/Djaneiro" % sub_dir)
         verify_or_install("HTML5 Syntax", "ls %s/HTML5/*" % sub_dir, "git clone git://github.com/mrmartineau/HTML5.git %s/HTML5" % sub_dir)
+        verify_or_install("LESS Syntax", "ls %s/LESS/*" % sub_dir, "git clone git://github.com/danro/LESS-sublime.git %s/LESS" % sub_dir)
         verify_or_install("Package Control", "ls %s/Package\ Control.sublime-package" % sub_dir, "curl http://sublime.wbond.net/Package%%20Control.sublime-package -so %s/Package\ Control.sublime-package" % sub_dir)
 
     print """
