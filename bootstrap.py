@@ -253,6 +253,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ##############################################################################"""
 
     verify_or_gem_install("Vagrant", "vagrant", "vagrant")
+    verify_or_gem_install("Puppet", "puppet", "puppet")
 
  # if we have brew, just run update
     print """
