@@ -5,6 +5,7 @@ import tempfile
 from subprocess import call, check_output, CalledProcessError, Popen, PIPE
 
 OSX_COMMAND_LINE_TOOLS_URLS = {
+    "10.9": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mavericks_for_xcode__late_october_2013/command_line_tools_os_x_mavericks_for_xcode__late_october_2013.dmg",
     "10.8": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mountain_lion_for_xcode__october_2012/xcode451cltools_10_86938200a.dmg",
     "10.7": "http://adcdownload.apple.com/Developer_Tools/cltools_lion_from_xcode_4.5.1/xcode451cltools_10_76938201a.dmg",
     "10.6": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg",
@@ -80,7 +81,7 @@ def verify_or_brew_install(name, cmd, brew_package, required=True):
 
 
 def verify_or_gem_install(name, cmd, gem_package, required=True):
-    return verify_or_install(name, cmd, 'gem install %s' % gem_package)
+    return verify_or_install(name, cmd, 'sudo gem install %s' % gem_package)
 
 
 def verify_or_pip_install(name, cmd, pip_package, required=True):
@@ -179,7 +180,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ##############################################################################"""
 
     IS_A_MAC = False
-    MAC_OS_VERSION = check_output("sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'", shell=True).replace("\n", "")
+    MAC_OS_VERSION = check_output("sw_vers -productVersion", shell=True).replace("\n", "")
     if "command not found" in MAC_OS_VERSION:
         MAC_OS_VERSION = None
         IS_A_MAC = False
@@ -216,7 +217,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
         if not verify_existance("homebrew", "brew -v"):
             sysprint("Installing homebrew...")
-            call('ruby -e "$(curl -fsSkL raw.github.com/mxcl/homebrew/go)"', shell=True, stdout=NULL_FH, stderr=NULL_FH)
+            call('curl -fsSkL raw.github.com/mxcl/homebrew/go | ruby', shell=True)
             print "done."
 
         # Update homebrew
@@ -313,7 +314,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     verify_or_brew_install("Git autocomplete", "ls `brew --prefix`/etc/bash_completion", "bash-completion")
 
     #### Install flint ####
-    verify_or_pip_install("Flint", "/usr/local/share/python/use_flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint -q --upgrade")
+    verify_or_pip_install("Flint", "/usr/local/bin/use_flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint -q --upgrade")
 
     # set up /etc/hosts
     # sysprint("Setting up /etc/hosts for be.com")
