@@ -5,26 +5,13 @@
 import sys, os, subprocess, tempfile
 
 OSX_CLT_URLS = {
-        "10.9": "http://adc-mirror.s3-us-west-2.amazonaws.com/command_line_tools_os_x_mavericks_for_xcode__late_october_2013.dmg",
+    "10.9": "http://adc-mirror.s3-us-west-2.amazonaws.com/command_line_tools_os_x_mavericks_for_xcode__late_october_2013.dmg",
     "10.8": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mountain_lion_for_xcode__october_2012/xcode451cltools_10_86938200a.dmg",
     "10.7": "http://adcdownload.apple.com/Developer_Tools/cltools_lion_from_xcode_4.5.1/xcode451cltools_10_76938201a.dmg",
     "10.6": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg",
 }
 VIRTUALBOX_URL = "http://dlc.sun.com.edgesuite.net/virtualbox/4.3.2/VirtualBox-4.3.2-90405-OSX.dmg"
 VAGRANT_URL = "http://downloads.vagrantup.com/tags/v1.0.5"
-
-def choice_prompt(prompt, choices=['y','n'], retries=4, exit_on_fail=True):
-    """
-    Cheesy input prompt
-    """
-    complaint = "Choice must be one of %s" % ', '.join(choices)
-    while True:
-        choice = raw_input("%s [%s] " % (prompt, '/'.join(choices)))
-        if choice in choices: return choice
-        retries -= 1
-        print complaint
-    print 'ERROR: Unable to obtain valid user response.'
-    if exit_on_fail: sys.exit(1)
 
 def call(cmd, return_output=True):
     """
@@ -220,9 +207,6 @@ def main():
         # Notify the user of pending installations
         print "The following dependencies were not found on your system, and will be installed:"
         for x in to_install: print "\t%s" % x
-        if choice_prompt("Continue?") == 'n':
-            print 'User cancelled bootstrap process'
-            sys.exit(0)
 
         # Install dependencies
         for dependency in to_install:
