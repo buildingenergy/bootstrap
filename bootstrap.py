@@ -1,399 +1,241 @@
 #!/usr/bin/env python
-import sys
-from os import path
-import tempfile
-from subprocess import call, check_output, CalledProcessError, Popen, PIPE
+# bootstrap.py - Fancy one-line bootstrap magic for BE
+# Installs command-line tools, brew, and flint by default
 
-OSX_COMMAND_LINE_TOOLS_URLS = {
-    "10.9": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mavericks_for_xcode__late_october_2013/command_line_tools_os_x_mavericks_for_xcode__late_october_2013.dmg",
+import sys, os, subprocess, tempfile
+
+OSX_CLT_URLS = {
+    "10.9": "http://adc-mirror.s3-us-west-2.amazonaws.com/command_line_tools_os_x_mavericks_for_xcode__late_october_2013.dmg",
     "10.8": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_os_x_mountain_lion_for_xcode__october_2012/xcode451cltools_10_86938200a.dmg",
     "10.7": "http://adcdownload.apple.com/Developer_Tools/cltools_lion_from_xcode_4.5.1/xcode451cltools_10_76938201a.dmg",
     "10.6": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg",
 }
-VIRTUALBOX_URL = "https://www.virtualbox.org/wiki/Downloads"
+VIRTUALBOX_URL = "http://dlc.sun.com.edgesuite.net/virtualbox/4.3.2/VirtualBox-4.3.2-90405-OSX.dmg"
 VAGRANT_URL = "http://downloads.vagrantup.com/tags/v1.0.5"
-NULL_FH = None
 
-
-def confirm(prompt, retries=4, complaint='Please enter y or n!'):
-    while True:
-        ok = raw_input("%s " % prompt)
-        if ok in ('y', 'ye', 'yes'):
-            return True
-        if ok in ('n', 'no', 'nop', 'nope'):
-            return False
-        retries = retries - 1
-        if retries < 0:
-            raise IOError('Hm. Maybe your keyboard is broken?')
-        print complaint
-
-
-def program_exists(program):
+def call(cmd, return_output=True):
+    """
+    Cheesy wrapper around subprocess to make life easier
+    """
+    cmd = "if [ -f ~/.flintrc ]; then . ~/.flintrc; fi; export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH; %s" % cmd
     try:
-        p = Popen("if [ -f ~/.flintrc ]; then . ~/.flintrc; fi; export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:$PATH;%s" % program, shell=True, stdout=PIPE, stderr=PIPE)
-        p.communicate()
-        return p.returncode == 0
+        if return_output: return subprocess.check_output(cmd, shell=True)
+        else: return subprocess.call(cmd, shell=True, stdout=None, stderr=None)
+    except subprocess.CalledProcessError: return None
 
-    except:
+def program_exists(cmd):
+    """
+    Uses `which` to determine whether a command is installed and accessible
+    """
+    return call("which %s" % cmd) not in ('', None)
+
+def pkg_installed(pkg):
+    """
+    Uses pkgutil to check whether a pkg has been installed on the local system
+    """
+    return bool(call("pkgutil --pkgs | grep %s" % pkg))
+
+def install_homebrew():
+    """
+    Uses the brew script to install homebrew
+    """
+    call("curl -fsSkL raw.github.com/mxcl/homebrew/go | ruby")
+    if not program_exists("brew"): return False
+    call("brew update")
+    return True
+
+def install_virtualbox():
+    """
+    Downloads virtualbox and installs it, with magic and ponies
+    """
+    destination = tempfile.mktemp(".dmg")
+    call("curl -o %s %s" % (destination, VIRTUALBOX_URL))
+    call("hdiutil attach -noautoopen %s" % destination)
+    call("sudo -S installer -target / -pkg /Volumes/VirtualBox/VirtualBox.pkg")
+    call("hdiutil detach /Volumes/VirtualBox")
+    os.remove(destination)
+    if os.path.exists("/Applications/VirtualBox.app"): return True
+    return False
+
+def install_cltools():
+    """
+    Downloads XCode CLI tools and installed them, with magic and ponies
+    """
+    if not OS_VERSION in OSX_CLT_URLS:
+        print "Cannot find CLI Tools for Mac OS X %s" % OS_VERSION
         return False
+    destination = tempfile.mktemp(".dmg")
+    call("curl -o %s %s" % (destination, OSX_CLT_URLS[OS_VERSION]))
+    call("hdiutil attach -noautoopen %s" % destination)
+    call("sudo -S installer -target / -pkg /Volumes/Command\ Line\ Developer\ Tools/Command\ Line\ Tools\ \(OS\ X\ 10.9\).pkg")
+    call("hdiutil detach /Volumes/Command\ Line\ Developer\ Tools")
+    os.remove(destination)
+    if pkg_installed("com.apple.pkg.CLTools_Executables"): return True
+    return False
 
+def install_puppet():
+    """
+    Uses the standard gem installer to install puppet
+    """
+    call("sudo gem install puppet")
+    if not program_exists("puppet"): return False
+    return True
 
-def sysprint(s):
-    sys.stdout.write(s)
-    sys.stdout.flush()
+def install_vagrant():
+    """
+    Uses the standard gem installer to install vagrant
+    """
+    call("sudo gem install vagrant")
+    if not program_exists("vagrant"): return Fale
+    return True
 
+def install_python27():
+    call("brew install python")
+    if not os.path.exists("/usr/local/bin/python2.7"): return False
+    return True
 
-def verify_existance(name, cmd):
-    sysprint("Checking for %s... " % name)
-    if program_exists(cmd):
-        print "found."
-        return True
+def install_pip():
+    call("/usr/local/bin/easy_install-2.7 pip")
+    if not os.path.exists("/usr/local/bin/pip"): return False
+    return True
+
+def install_git():
+    call("brew install git")
+    if not os.path.exists("/usr/local/bin/git"): return False
+    return True
+
+def install_gitflow():
+    call("brew install git-flow")
+    if not os.path.exists("/usr/local/bin/git-flow"): return False
+    return True
+
+def install_virtualenv():
+    call("/usr/local/bin/pip install virtualenv")
+    if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep virtualenv-"): return False
+    return True
+
+def install_virtualenvwrapper():
+    call("/usr/local/bin/pip install virtualenvwrapper")
+    if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep virtualenvwrapper-"): return False
+    return True
+
+def install_flint():
+    call("/usr/local/bin/pip install git+ssh://git@github.com/buildingenergy/flint.git#egg=flint -q --upgrade")
+    if not program_exists("use_flint"): return False
+    return True
+
+def configure_git():
+    username = raw_input("Please enter your name: ")
+    email    = raw_input("Please enter your email: ")
+    call("git config --global user.name '%s'" % username)
+    call("git config --global user.email %s" % email)
+
+def configure_flint():
+    flint_rc = """alias kill_pyc="find . -name '*.pyc' -delete"
+    export BE_BOOTSTRAP_VERSION=1.2
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:/usr/local/share/npm/bin:$PATH
+    if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
+        source /usr/local/share/python/virtualenvwrapper.sh
+        fi
+        source /usr/local/etc/flint/flint_wrapper.sh
+        source /usr/local/etc/flint/flint_autocompletion.sh"""
+    if not call("grep .flintrc ~/.bash_profile"):
+        call("echo . ~/.flintrc >> ~/.bash_profile")
+    f = open(os.path.join(os.path.expanduser("~"), ".flintrc"), 'w')
+    f.write(flint_rc)
+    f.close()
+
+def main():
+    global OS_VERSION, pw
+    OS_VERSION = call("sw_vers -productVersion")[:-1]
+
+    to_install = []
+
+    # Check that we're actually a mac system
+    if not OS_VERSION:
+        print "Non-mac systems are not supported at this time."
+        sys.exit(1)
+
+    # Start with a sudo so we have credentials cached
+    call('sudo echo')
+
+    # Check that we can access BE code repos
+    if not call('ssh -q -o "StrictHostKeyChecking no" -T git@github.com 2> /dev/null', return_output=False):
+        print 'ERROR: Cannot access BE code repos; are your keys present both locally and on github?'
+        sys.exit(1)
+    
+    # Check that XCode tools are installed
+    if not pkg_installed("com.apple.pkg.CLTools_Executables"): to_install.append("cltools")
+
+    # Check for homebrew installation
+    if not program_exists("brew"): to_install.append("homebrew")
+
+    # Check for Virtualbox
+    if not os.path.exists("/Applications/Virtualbox.app"): to_install.append("virtualbox")
+
+    # Check for Puppet
+    if not program_exists("puppet"): to_install.append("puppet")
+
+    # Check for Vagrant
+    if not program_exists("vagrant"): to_install.append("vagrant")
+
+    # Check for Python2.7
+    if not os.path.exists("/usr/local/bin/python2.7"): to_install.append("python27")
+
+    # Check for pip
+    if not os.path.exists("/usr/local/bin/pip"): to_install.append("pip")
+
+    # Check for git
+    if not os.path.exists("/usr/local/bin/git"): to_install.append("git")
+
+    # Check for git-flow
+    if not os.path.exists("/usr/local/bin/git-flow"): to_install.append("gitflow")
+
+    # Check for virtualenv
+    if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep virtualenv-"): to_install.append("virtualenv")
+
+    # Check for virtualenvwrapper
+    if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep virtualenvwrapper-"): to_install.append("virtualenvwrapper")
+
+    # Check for flint
+    if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep flint"): to_install.append("flint")
+
+    # Do silly sublime packages
+    # Do I really have to?
+
+    # Check if we even need to continue bootstrapping
+    if not to_install:
+        print 'All dependencies seem to be installed already.'
     else:
-        print "not found."
-        return False
+        # Notify the user of pending installations
+        print "The following dependencies were not found on your system, and will be installed:"
+        for x in to_install: print "\t%s" % x
 
+        # Install dependencies
+        for dependency in to_install:
+            func = globals()['install_%s' % dependency]
+            print "### Installing %s ###" % dependency
+            success = func()
+            if not success:
+                print "ERROR: Could not install %s" % dependency
+                print "Aborting bootstrap process"
+                sys.exit(1)
 
-def command_output(cmd):
-    try:
-        return Popen(cmd, shell=True, stderr=PIPE, stdout=PIPE).communicate()[1]
-    except CalledProcessError, e:
-        return e.output
+    if not os.path.exists("~/.flintrc"):
+        print "### Configuring Flint ###"
+        configure_flint()
 
+    if not os.path.exists("~/.gitconfig"):
+        print "### Configuring Git ###"
+        configure_git()
 
-def string_in_command_output(cmd, s):
-    return "%s" % command_output(cmd)
+    # Complete!
+    print """###                Bootstrap Complete!                   ###
 
+    You can now use flint to work on our codebase.
+    To get started, reload your bash profile then start using flint!:
 
-def verify_or_install(name, cmd, install_cmd, required=True):
-    if not verify_existance(name, cmd):
-        sysprint("  Installing %s... " % name)
-        program_exists(install_cmd)
-        if not program_exists(cmd):
-            sys.exit("Error installing %s.\n\nPlease run '%s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
-                    (name, install_cmd)
-                )
-        else:
-            print "done."
+    source ~/.bash_profile
+    flint help"""
 
-
-def verify_or_brew_install(name, cmd, brew_package, required=True):
-    return verify_or_install(name, cmd, 'brew install %s' % brew_package)
-
-
-def verify_or_gem_install(name, cmd, gem_package, required=True):
-    return verify_or_install(name, cmd, 'sudo gem install %s' % gem_package)
-
-
-def verify_or_pip_install(name, cmd, pip_package, required=True):
-    return verify_or_install(name, cmd, '/usr/local/bin/pip install %s' % pip_package)
-
-
-def pip_install(package, package_name=None, required=True):
-    if not package_name:
-        package_name = package
-    sysprint("Installing %s... " % package_name)
-
-    try:
-        program_exists('/usr/local/bin/pip install %s' % package)
-    except:
-        sys.exit("Error installing %s.\n\nPlease '/usr/local/bin/pip install %s' manually and fix any errors, then retry bootstrap. Sorry!\n" %
-            (package_name, package)
-        )
-    print "done."
-
-
-def ensure_file_contains_wrapped_fragment(filename, header, content, footer):
-    if path.isfile(filename):
-        mode = "r+"
-    else:
-        mode = "w+"
-    with open(filename, mode) as f:
-        contents = "%s" % f.read()
-        if header in contents and footer in contents:
-            old_header = "%s" % contents[:contents.find(header) + len(header)]
-            old_footer = "%s" % contents[contents.find(footer):]
-            new_contents = old_header
-            new_contents += content
-            new_contents += old_footer
-        else:
-                new_contents = contents
-                new_contents += header
-                new_contents += content
-                new_contents += footer
-        f.seek(0)
-        f.truncate(0)
-        f.write(new_contents)
-        f.close()
-
-
-def main(args=sys.argv):
-    global NULL_FH
-    NULL_FH = open("/dev/null", "w")
-    TEMP_DIR = tempfile.mkdtemp()
-
-    print """
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX IXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   RXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     VXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX       ;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXV         ,XXYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX,           .XX ,XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXi              ,XX  .XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXX.                +XV   ,XXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXYXV                   VX=    tXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXY XX                     XR     :XXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXX, ;X=                     IX;     .XXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXV   IX                       XV      ,XXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXY    YX                       XR       iXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXX     +X:                      VX        XXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXX.     .XY                      YX        tXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXX       YX                      VR        ;XXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXI        XY                     XX        :XXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXY        =X:                   .X;        tXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXX         YX                   YR         XXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXX=         VX                  X:        VXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXX.         XV                VY        VXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXX,         VV              =X       ,XXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXi         IV             R       IXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXX;        +X           X      +XXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXX;       .X         X     =XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXIYXXXXXXXXXXV:      Y.      V   .IXXXXXXXXXXIt=.YXXXXXXXXXXXXXXXX
-XXXXXXXXXXXY       :tIXXXXXXX;    ::    I  ;XXXXXXVI+         YXXXXXXXXXXXXXXX
-XXXXXXXXXXX               tIXXXXY:  =  ::XXXXYt                RXXXXXXXXXXXXXX
-XXXXXXXXXXi                     +IVXRYRVI;                     IXXXXXXXXXXXXXX
-XXXXXXXXXX=                                               .,tRXXXXXXXXXXXXXXXX
-XXXXXXXXXXX,,                                        ,;XXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXR   ,,,,                            =YYXXXXX .RXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXVXXVi                                        VVXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXVi                                                =XXXXXXXXXXXXX
-XXXXXXXXXXXX:                   :RXXXXXXX:                      +XXXXXXXXXXXXX
-XXXXXXXXXXXXt             .YRXXXXXXXXXXXXXXXXXX:                RXXXXXXXXXXXXX
-XXXXXXXXXXXXX.       +RXXXXXXXXXXXXXXXXXXXXXXXXXXXXXV,         VXXXXXXXXXXXXXX
-XXXXXXXXXXXXXX,=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXRY   YXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-"""
-
-    ### Sanity check dev tools, etc installed. ###
-    print """
-##############################################################################
-############                  System Dev Tools                    ############
-##############################################################################"""
-
-    IS_A_MAC = False
-    MAC_OS_VERSION = check_output("sw_vers -productVersion", shell=True).replace("\n", "")
-    if "command not found" in MAC_OS_VERSION:
-        MAC_OS_VERSION = None
-        IS_A_MAC = False
-        print "Looks like you're not using a Mac.  Flint doesn't support bootstrapping non-macs quite yet, but we'll give it a shot."
-    else:
-        IS_A_MAC = True
-        # BASE_MAC_OS_VERSION = MAC_OS_VERSION[:MAC_OS_VERSION.rfind(".")]
-        print "Detected Mac OS %s." % MAC_OS_VERSION
-
-        # See if we have the developer tools installed.
-        sysprint("Checking for the developer tools or xCode... ")
-        while not program_exists("gcc -v") or not program_exists("make -v"):
-            print "not found."
-
-            # Download the dev tools, open the instaaller.
-            print "\nPlease download and install the latest Mac OS X Command Line Tools (or XCode)."
-            raw_input("Press any key to open the website for download... ")
-            call("open https://developer.apple.com/downloads", shell=True)
-
-            # cmd = call("curl -#o ~/Desktop/devtools.dmg %s" % OSX_COMMAND_LINE_TOOLS_URLS[BASE_MAC_OS_VERSION], shell=True)
-            print ""
-            raw_input("Press any key to continue when you're done installing the command line tools..")
-            sysprint("\nChecking for the developer tools or xCode... ")
-        else:
-            print "found."
-        print "System dev tools look good!"
-
-    if IS_A_MAC:
-        # if we have brew, just run update
-        print """
-##############################################################################
-############                      Homebrew                        ############
-##############################################################################"""
-
-        if not verify_existance("homebrew", "brew -v"):
-            sysprint("Installing homebrew...")
-            call('curl -fsSkL raw.github.com/mxcl/homebrew/go | ruby', shell=True)
-            print "done."
-
-        # Update homebrew
-        sysprint("Updating homebrew... ")
-        if call("brew update", shell=True, stdout=NULL_FH, stderr=NULL_FH) == 0:
-            print "done."
-        else:
-            sys.exit("Error updating homebrew.\n\nPlease run 'brew update' manually and fix any errors, then retry bootstrap. Sorry!\n")
-
-        print "Homebrew looks good!"
-
-        print """
-##############################################################################
-############                      Virtualbox                      ############
-##############################################################################"""
-
-        while not verify_existance("Virtualbox", "ls /Applications/Virtualbox.app"):
-
-            # Download the dev tools, open the instaaller.
-            print "\nPlease download and install the latest version of Virtualbox."
-            raw_input("Press any key to open the website for download... ")
-            call("open %s" % (VIRTUALBOX_URL,), shell=True)
-
-            # cmd = call("curl -#o ~/Desktop/devtools.dmg %s" % OSX_COMMAND_LINE_TOOLS_URLS[BASE_MAC_OS_VERSION], shell=True)
-            print ""
-            raw_input("Press any key to continue when you're done installing virtualbox..")
-
-        print "Virtualbox looks good!"
-
-    # No longer mac-only.
-    print """
-##############################################################################
-############                       Vagrant                        ############
-##############################################################################"""
-
-    verify_or_gem_install("Vagrant", "vagrant", "vagrant")
-    verify_or_gem_install("Puppet", "puppet", "puppet")
-
- # if we have brew, just run update
-    print """
-##############################################################################
-############                     Github Auth                      ############
-##############################################################################"""
-
-    # Verify that you have access to github.
-    sysprint("Verifying your SSH key on github... ")
-    while not string_in_command_output('ssh -q -o "StrictHostKeyChecking no" -T git@github.com', "successfully authenticated"):
-        print "failed."
-        print "\nYour ssh keys have either not been set up on this machine or configured with github."
-
-        raw_input("Please setup your ssh keys and press any key to try again.")
-        print ""
-        sysprint("Verifying your SSH key on github... ")
-
-    ssh_check = command_output('ssh -q -o "StrictHostKeyChecking no" -T git@github.com')
-    GITHUB_USERNAME = ssh_check[ssh_check.find(" ") + 1:ssh_check.find("!")]
-    print "verified as %s." % (GITHUB_USERNAME,)
-
-    # Verify that you've been added to the Building Energy dev team.
-    sysprint("Verifying you have access to the Building Enegy repos... ")
-    while string_in_command_output("git clone git+ssh://git@github.com/buildingenergy/flint.git %s/flint.git" % TEMP_DIR, "Permission denied"):
-        print "failed."
-        print "\nYour github user does not appear to be in the Building Energy developer team."
-
-        raw_input("Please get someone to add you to the team, and try again.")
-
-    print "verified."
-    call("rm -rf %s/flint.git" % TEMP_DIR, shell=True, stdout=NULL_FH, stderr=NULL_FH)
-
- # if we have brew, just run update
-    print """
-##############################################################################
-############                   Core Packages                      ############
-##############################################################################"""
-    #### Install python2.7 ####
-    verify_or_brew_install("Python 2.7", "/usr/local/bin/python2.7 --version", "python")
-
-    #### Install pip ####
-    verify_or_install("pip", "/usr/local/bin/pip --version", "/usr/local/bin/easy_install-2.7 pip")
-    verify_or_install("readline", "/usr/local/bin/python2.7 -c 'import readline'", "/usr/local/bin/easy_install-2.7 readline")
-
-    # install virtualenv / virtualenvwrapper
-    pip_install("virtualenv")
-    pip_install("virtualenvwrapper")
-
-    # make .virtualenvs
-    if not program_exists("ls ~/.virtualenvs"):
-        sysprint("Creating .virtualenv folder... ")
-        call("mkdir ~/.virtualenvs", shell=True, stdout=NULL_FH, stderr=NULL_FH)
-        print "done."
-
-    verify_or_brew_install("Git", "/usr/local/bin/git --version", "git")
-    verify_or_brew_install("Git-flow plugin", "git-flow version", "git-flow")
-    verify_or_brew_install("Git autocomplete", "ls `brew --prefix`/etc/bash_completion", "bash-completion")
-
-    #### Install flint ####
-    verify_or_pip_install("Flint", "/usr/local/bin/use_flint", "git+ssh://git@github.com/buildingenergy/flint.git#egg=flint -q --upgrade")
-
-    # set up /etc/hosts
-    # sysprint("Setting up /etc/hosts for be.com")
-    # print "done."
-
-    # Update the bash profile.
-    sysprint("Adding homebrew paths and virtualenv to your .bash_profile... ")
-    profile_header = "\n#### Start BE config ####\n"
-    bash_content = ". ~/.flintrc\n"
-    profile_content = """alias kill_pyc="find . -name '*.pyc' -delete"
-export BE_BOOTSTRAP_VERSION=1.2
-export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:/usr/local/share/npm/bin:$PATH
-if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
-    source /usr/local/share/python/virtualenvwrapper.sh
-fi
-source /usr/local/etc/flint/flint_wrapper.sh
-source /usr/local/etc/flint/flint_autocompletion.sh
-if [ -f `brew --prefix`/etc/bash_completion ]; then
-    . `brew --prefix`/etc/bash_completion
-fi
-source /usr/local/etc/bash_completion.d/git-flow-completion.bash
-"""
-    profile_footer = "#### End BE config ####\n"
-    try:
-        ensure_file_contains_wrapped_fragment(
-            path.join(path.expanduser("~"), ".flintrc"),
-            profile_header,
-            profile_content,
-            profile_footer
-        )
-    except:
-        import traceback
-        traceback.print_exc()
-        print "failed."
-        print "Unable to create the ~/.flintrc file. Please create a .flintrc file in your home directory and run bootstrap again."
-        print "\n%s\n" % profile_content
-    try:
-        ensure_file_contains_wrapped_fragment(
-            path.join(path.expanduser("~"), ".bash_profile"),
-            profile_header,
-            bash_content,
-            profile_footer
-        )
-        print "done."
-    except:
-        from traceback import print_exc
-        print_exc()
-        print "failed."
-        print "Unable to automatically add to your .bash_profle. Please add the following to your shell .rc file of choice."
-        print "\n%s\n" % profile_content
-
-    # Do you want to install sublime packages?
-    if confirm("Would you like to have some useful sublime plugins installed (Linter, codeIntel, etc?) (y/n)"):
-        sub_dir = "~/Library/Application\ Support/Sublime\ Text\ 2/Packages"
-        verify_or_install("Sublime CodeIntel", "ls %s/SublimeCodeIntel/*" % sub_dir, "git clone git://github.com/Kronuz/SublimeCodeIntel.git %s/SublimeCodeIntel" % sub_dir)
-        verify_or_install("Sublime Linter", "ls %s/SublimeLinter/*" % sub_dir, "git clone git://github.com/SublimeLinter/SublimeLinter.git %s/SublimeLinter" % sub_dir)
-        verify_or_install("Cucumber Syntax", "ls %s/Cucumber/*" % sub_dir, "git clone git://github.com/npverni/cucumber-sublime2-bundle.git %s/Cucumber" % sub_dir)
-        verify_or_install("Django Syntax", "ls %s/Djaneiro/*" % sub_dir, "git clone git://github.com/squ1b3r/Djaneiro.git %s/Djaneiro" % sub_dir)
-        verify_or_install("HTML5 Syntax", "ls %s/HTML5/*" % sub_dir, "git clone git://github.com/mrmartineau/HTML5.git %s/HTML5" % sub_dir)
-        verify_or_install("LESS Syntax", "ls %s/LESS/*" % sub_dir, "git clone git://github.com/danro/LESS-sublime.git %s/LESS" % sub_dir)
-        verify_or_install("Package Control", "ls %s/Package\ Control.sublime-package" % sub_dir, "curl http://sublime.wbond.net/Package%%20Control.sublime-package -so %s/Package\ Control.sublime-package" % sub_dir)
-
-    print """
-
-##############################################################################
-############                Bootstrap Complete!                   ############
-##############################################################################
-
-You can now use flint to work on our codebase.
-To get started, just type:
-
-flint help
-
-Have fun!
-"""
-
-    #### Flint pitch-camp ####
-
-    NULL_FH.close()
-
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': main()
