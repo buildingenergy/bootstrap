@@ -50,8 +50,8 @@ def install_virtualbox():
     """
     destination = tempfile.mktemp(".dmg")
     call("curl -o %s %s" % (destination, VIRTUALBOX_URL))
-    call("hdiutil attach %s" % destination)
-    call("open -W /Volumes/VirtualBox/VirtualBox.pkg")
+    call("hdiutil attach -noautoopen %s" % destination)
+    call("sudo -S installer -target / -pkg /Volumes/VirtualBox/VirtualBox.pkg")
     call("hdiutil detach /Volumes/VirtualBox")
     os.remove(destination)
     if os.path.exists("/Applications/VirtualBox.app"): return True
@@ -66,8 +66,8 @@ def install_cltools():
         return False
     destination = tempfile.mktemp(".dmg")
     call("curl -o %s %s" % (destination, OSX_CLT_URLS[OS_VERSION]))
-    call("hdiutil attach %s" % destination)
-    call("open -W /Volumes/Command\ Line\ Developer\ Tools/Command\ Line\ Tools\ \(OS\ X\ 10.9\).pkg")
+    call("hdiutil attach -noautoopen %s" % destination)
+    call("sudo -S installer -target / -pkg /Volumes/Command\ Line\ Developer\ Tools/Command\ Line\ Tools\ \(OS\ X\ 10.9\).pkg")
     call("hdiutil detach /Volumes/Command\ Line\ Developer\ Tools")
     os.remove(destination)
     if pkg_installed("com.apple.pkg.CLTools_Executables"): return True
@@ -146,7 +146,7 @@ def configure_flint():
     f.close()
 
 def main():
-    global OS_VERSION
+    global OS_VERSION, pw
     OS_VERSION = call("sw_vers -productVersion")[:-1]
 
     to_install = []
@@ -155,6 +155,9 @@ def main():
     if not OS_VERSION:
         print "Non-mac systems are not supported at this time."
         sys.exit(1)
+
+    # Start with a sudo so we have credentials cached
+    call('sudo echo')
 
     # Check that we can access BE code repos
     if not call('ssh -q -o "StrictHostKeyChecking no" -T git@github.com 2> /dev/null', return_output=False):
