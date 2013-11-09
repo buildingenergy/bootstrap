@@ -160,7 +160,7 @@ def main():
     call('sudo echo')
 
     # Check that we can access BE code repos
-    if not call('ssh -q -o "StrictHostKeyChecking no" -T git@github.com 2> /dev/null', return_output=False):
+    if call('ssh -q -o "StrictHostKeyChecking no" -T git@github.com 2> /dev/null', return_output=False) != 1:
         print 'ERROR: Cannot access BE code repos; are your keys present both locally and on github?'
         sys.exit(1)
     
