@@ -134,8 +134,8 @@ def configure_flint():
     flint_rc = """alias kill_pyc="find . -name '*.pyc' -delete"
     export BE_BOOTSTRAP_VERSION=1.2
     export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/share/python:/usr/local/share/npm/bin:$PATH
-    if [ -f /usr/local/share/python/virtualenvwrapper.sh ]; then
-        source /usr/local/share/python/virtualenvwrapper.sh
+    if [ -f /usr/local/bin/virtualenvwrapper.sh ]; then
+        source /usr/local/bin/virtualenvwrapper.sh
         fi
         source /usr/local/etc/flint/flint_wrapper.sh
         source /usr/local/etc/flint/flint_autocompletion.sh"""
