@@ -11,7 +11,7 @@ OSX_CLT_URLS = {
     "10.6": "http://adcdownload.apple.com/Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg",
 }
 VIRTUALBOX_URL = "http://dlc.sun.com.edgesuite.net/virtualbox/4.3.2/VirtualBox-4.3.2-90405-OSX.dmg"
-VAGRANT_URL = "http://downloads.vagrantup.com/tags/v1.0.5"
+VAGRANT_URL = "http://hc-vagrant-files.s3.amazonaws.com/packages/a40522f5fabccb9ddabad03d836e120ff5d14093/Vagrant-1.3.5.dmg"
 
 def call(cmd, return_output=True):
     """
@@ -85,8 +85,13 @@ def install_vagrant():
     """
     Uses the standard gem installer to install vagrant
     """
-    call("sudo gem install vagrant")
-    if not program_exists("vagrant"): return Fale
+    destination = tempfile.mktemp(".dmg")
+    call("curl -o %s %s" % (destination, VAGRANT_URL))
+    call("hdiutil attach -noautoopen %s" % destination)
+    call("sudo -S installer -target / -pkg /Volumes/Vagrant/Vagrant.pkg")
+    call("hdiutil detach /Volumes/Vagrant")
+    os.remove(destination)
+    if not program_exists("vagrant"): return False
     return True
 
 def install_python27():
@@ -200,8 +205,8 @@ def main():
     # Check for flint
     if not os.path.exists('/usr/local/lib/python2.7/site-packages') or not call("ls /usr/local/lib/python2.7/site-packages | grep flint"): to_install.append("flint")
 
-    # Do silly sublime packages
-    # Do I really have to?
+    # Things we were told to force-install
+    to_install += [x[8:] for x in sys.argv if x.startswith("--force-")]
 
     # Check if we even need to continue bootstrapping
     if not to_install:
@@ -225,7 +230,7 @@ def main():
         print "### Configuring Flint ###"
         configure_flint()
 
-    if not os.path.exists("~/.gitconfig"):
+    if not os.path.exists(os.path.join(os.path.expanduser("~"),".gitconfig")):
         print "### Configuring Git ###"
         configure_git()
 
