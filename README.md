@@ -5,7 +5,7 @@ Need to get developing on Building Energy stuff?  Want to use Flint?  Yeah, you 
 
 Run this line in a terminal:
 ```
-curl -s https://raw.github.com/buildingenergy/bootstrap/master/bootstrap.py | python
+python -c "$(curl -s https://raw.github.com/buildingenergy/bootstrap/master/bootstrap.py)"
 ```
 
 
